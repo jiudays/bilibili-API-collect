@@ -8,7 +8,7 @@
 
 认证方式: Cookie(SESSDATA)
 
-鉴权方式：[Wbi 签名](../misc/sign/wbi.md), Cookie中的`buvid3`不为空
+鉴权方式：[Wbi 签名](../misc/sign/wbi.md) / [APP 签名](../misc/sign/APP.md)
 
 可以选择进行认证，若未认证视作未登录，将会受到限制，详见后续内容。
 
@@ -16,13 +16,24 @@
 
 | 参数名 | 类型 | 内容         | 必要性 | 备注 |
 | ------ | ---- | ------------ | ------ | ---- |
-| id     | num  | 直播间真实id | 必要   |      |
-| type   | num  | (?)          | 非必要 | 作用尚不明确 |
-| web_location | str | (?)     | 非必要 | 作用尚不明确 |
-| w_rid  | str | Wbi 签名 | 必要  | 详见 [Wbi 签名](../misc/sign/wbi.md) |
-| wts    | num | 当前时间戳  | 必要  | 详见 [Wbi 签名](../misc/sign/wbi.md) |
+| id | num | 直播间真实id | 必要(可选) | 网页端访问时必要 |
+| room_id | num | 作用与`id`参数相同 | 必要(可选) | APP访问时必要 |
+| type | num | (?) | 非必要 | 作用尚不明确 |
+| is_anchor | bool | 是否为主播 | 非必要 | 作用尚不明确 |
+| platform | str | 平台标识 | 非必要 |  |
+| user_type | num | (?) | 非必要 | 作用尚不明确 |
+| version | str | 应用版本 | 非必要 |  |
+| web_location | str | (?) | 非必要 | 作用尚不明确 |
+| w_rid | str | Wbi 签名 | 必要(可选) | 网页端访问时使用，详见 [Wbi 签名](../misc/sign/wbi.md) |
+| wts | num | 当前时间戳 | 必要(可选) | 网页端访问时使用，详见 [Wbi 签名](../misc/sign/wbi.md) |
+| access_key | str | (?) | 非必要 | 可能用于认证? |
+| appkey | str | APP Key | 必要(可选) | APP访问时使用，详见 [APP 签名](../misc/sign/APP.md) |
+| ts | num | 当前时间戳 | 必要(可选) | APP访问时使用 |
+| sign | str | APP 签名 | 必要(可选) | APP访问时使用，详见 [APP 签名](../misc/sign/APP.md) |
 
-注: 从2025年5月26日开始正式强制要求Wbi签名，2025年6月27日开始要求`buvid3`。见[#1295](https://github.com/SocialSisterYi/bilibili-API-collect/issues/1295)
+通过网页端访问时，使用 `id` 参数加Wbi签名；通过APP访问时，使用 `room_id` 和 `ts` 参数加APP签名。
+
+注: 通过网页端访问时，从2025年5月26日开始正式强制要求Wbi签名，2025年6月27日开始强制要求 `buvid3` Cookie，2026年前的某一天不再强制要求 `buvid3` Cookie。
 
 **JSON回复：**
 
@@ -123,7 +134,7 @@ curl 'https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=1017
 
 **注: 特别的**, WS 与 WSS 连接地址带有路径 `/sub`, 如 `wss://broadcastlv.chat.bilibili.com:443/sub`.
 
-**再注:** B 站更新了隐私政策, 连接建立后, 若该连接认证时传入信息来自未登录用户, 会提示 `为保护用户隐私，未注册登陆用户将无法查看他人昵称`, 随后部分数据包（如“弹幕”、“用户交互消息”）的用户 mid 都为 `0`, 用户名部分也使用 `*` 保护, 部分房间受到豁免, 参见 [#732](https://github.com/SocialSisterYi/bilibili-API-collect/issues/732)
+**再注:** B 站更新了隐私政策, 连接建立后, 若该连接认证时传入信息来自未登录用户, 会提示 `为保护用户隐私，未注册登陆用户将无法查看他人昵称`, 随后部分数据包（如“弹幕”、“用户交互消息”）的用户 mid 都为 `0`, 用户名部分也使用 `*` 保护, 部分数据包（如“弹幕”）的下发频率降低, 部分房间受到豁免, 参见 [#732](https://github.com/SocialSisterYi/bilibili-API-collect/issues/732)
 
 操作流程 (伪代码):
 
@@ -710,9 +721,131 @@ while (!s.isclosed()) {
 
 </details>
 
+#### 跨房弹幕 (DANMU_MSG_MIRROR)
+
+注: 特定情况在相关直播间下发，通常是某些活动
+
+数据结构与普通弹幕(DANMU_MSG)相同。
+
+**示例:**
+
+<details>
+<summary>查看消息示例:</summary>
+
+```json
+{
+	"cmd": "DANMU_MSG_MIRROR",
+	"dm_v2": "",
+	"info": [
+		[
+			0,
+			1,
+			25,
+			16777215,
+			1765714387241,
+			849855473,
+			0,
+			"8f121833",
+			0,
+			0,
+			0,
+			"",
+			0,
+			"{}",
+			"{}",
+			{
+				"extra": "{\"send_from_me\":false,\"master_player_hidden\":false,\"mode\":0,\"color\":16777215,\"dm_type\":0,\"font_size\":25,\"player_mode\":1,\"show_player_type\":0,\"content\":\"关闭跨房弹幕\",\"user_hash\":\"2400327731\",\"emoticon_unique\":\"\",\"bulge_display\":0,\"recommend_score\":9,\"main_state_dm_color\":\"\",\"objective_state_dm_color\":\"\",\"direction\":0,\"pk_direction\":0,\"quartet_direction\":0,\"anniversary_crowd\":0,\"yeah_space_type\":\"\",\"yeah_space_url\":\"\",\"jump_to_url\":\"\",\"space_type\":\"\",\"space_url\":\"\",\"animation\":{},\"emots\":null,\"is_audited\":false,\"id_str\":\"38419d87819cfb833e2a7b61f8693ea9844\",\"icon\":null,\"show_reply\":true,\"reply_mid\":0,\"reply_uname\":\"\",\"reply_uname_color\":\"\",\"reply_is_mystery\":false,\"reply_type_enum\":0,\"hit_combo\":0,\"esports_jump_url\":\"\",\"is_mirror\":true,\"is_collaboration_member\":false}",
+				"mode": 0,
+				"show_player_type": 0,
+				"user": {
+					"base": {
+						"face": "https://i2.hdslb.com/bfs/face/68f8c1276eb6487df20fe3c00ffa43a4dafccda5.jpg",
+						"is_mystery": false,
+						"name": "黑手派",
+						"name_color": 0,
+						"name_color_str": "",
+						"official_info": {
+							"desc": "",
+							"role": 0,
+							"title": "",
+							"type": -1
+						},
+						"origin_info": {
+							"face": "https://i2.hdslb.com/bfs/face/68f8c1276eb6487df20fe3c00ffa43a4dafccda5.jpg",
+							"name": "黑手派"
+						},
+						"risk_ctrl_info": null
+					},
+					"guard": null,
+					"guard_leader": {
+						"is_guard_leader": false
+					},
+					"medal": null,
+					"title": {
+						"old_title_css_id": "",
+						"title_css_id": ""
+					},
+					"uhead_frame": null,
+					"uid": 1259043854,
+					"wealth": null
+				}
+			},
+			{
+				"activity_identity": "",
+				"activity_source": 0,
+				"not_show": 0
+			},
+			0
+		],
+		"关闭跨房弹幕",
+		[
+			1259043854,
+			"黑手派",
+			0,
+			0,
+			0,
+			10000,
+			1,
+			""
+		],
+		[],
+		[
+			0,
+			0,
+			9868950,
+			">50000",
+			0
+		],
+		[
+			"",
+			""
+		],
+		0,
+		0,
+		null,
+		{
+			"ct": "330442D6",
+			"ts": 1765714387
+		},
+		0,
+		0,
+		null,
+		null,
+		0,
+		39,
+		[
+			0
+		],
+		null
+	]
+}
+```
+
+</details>
+
 #### 交互信息合并 (DM_INTERACTION)
 
-注: 连续多条相同弹幕时触发
+注: 连续多条相同事件时触发，特定主播触发一次特定事件也下发
 
 **JSON正文:**
 
@@ -7263,7 +7396,7 @@ type===106
 
 #### 粉丝勋章更新 (MESSAGEBOX_USER_MEDAL_CHANGE)
 
-升级或点亮时下发。
+当你升级或点亮粉丝勋章时将在你所有的登录会话下发。
 
 **JSON消息:**
 
@@ -7504,6 +7637,199 @@ type===106
 		"button_text": "去投喂",
 		"display_duration": 8,
 		"room_id": 1899237171
+	}
+}
+```
+
+</details>
+
+#### 自动关注 (CONFIRM_AUTO_FOLLOW)
+
+未关注状态下投喂礼物后可能下发。
+
+**JSON消息:**
+
+根对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| cmd | str | `CONFIRM_AUTO_FOLLOW` |  |
+| data | str | 信息本体 |  |
+
+`data` 对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| type | num | (?) | 作用尚不明确 |
+| uid | num | 用户uid |  |
+| ruid | num | 主播uid |  |
+
+**示例:**
+
+<details>
+<summary>查看消息示例:</summary>
+
+```json
+{
+	"cmd": "CONFIRM_AUTO_FOLLOW",
+	"data": {
+		"type": 9,
+		"uid": 438160221,
+		"ruid": 431073645
+	}
+}
+```
+
+</details>
+
+#### 跨房看过 (COLLABORATION_LIVE_WATCHED)
+
+特定情况下统计相关直播间的看过数据。
+
+**JSON消息:**
+
+根对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| cmd | str | `COLLABORATION_LIVE_WATCHED` |  |
+| data | str | 信息本体 |  |
+
+`data` 对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| num | num | 看过人数 |  |
+| text_small | str | 看过人数文本 |  |
+| text_large | str | 完整看过人数文本 |  |
+
+**示例:**
+
+<details>
+<summary>查看消息示例:</summary>
+
+```json
+{
+	"cmd": "COLLABORATION_LIVE_WATCHED",
+	"data": {
+		"num": 1927773,
+		"text_small": "192.7万",
+		"text_large": "192.7万人看过"
+	}
+}
+```
+
+</details>
+
+#### 跨房在线 (COLLABORATION_LIVE_ONLINE)
+
+特定情况下统计相关直播间的在线数据。
+
+**JSON消息:**
+
+根对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| cmd | str | `COLLABORATION_LIVE_ONLINE` |  |
+| data | str | 信息本体 |  |
+
+`data` 对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| num | num | 在线人数 | 存在上限 |
+| text | str | 在线人数文本 |  |
+
+**示例:**
+
+<details>
+<summary>查看消息示例:</summary>
+
+```json
+{
+	"cmd": "COLLABORATION_LIVE_ONLINE",
+	"data": {
+		"num": 9999,
+		"text": "9999+"
+	}
+}
+```
+
+</details>
+
+#### 跨房人气 (COLLABORATION_LIVE_POPULARITY)
+
+特定情况下统计相关直播间的人气数据。
+
+**JSON消息:**
+
+根对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| cmd | str | `COLLABORATION_LIVE_POPULARITY` |  |
+| data | str | 信息本体 |  |
+
+`data` 对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| num | num | 人气值 |  |
+| text | str | 人气值文本 |  |
+| text_large | str | 完整人气值文本 |
+
+**示例:**
+
+<details>
+<summary>查看消息示例:</summary>
+
+```json
+{
+	"cmd": "COLLABORATION_LIVE_POPULARITY",
+	"data": {
+		"num": 8201776,
+		"text": "820.1万",
+		"text_large": "820.1万人气"
+	}
+}
+```
+
+</details>
+
+#### 游戏卡片刷新 (AD_GAME_CARD_REFRESH)
+
+直播间推广某个游戏时可能下发。
+
+**JSON消息:**
+
+根对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| cmd | str | `AD_GAME_CARD_REFRESH` |  |
+| data | str | 信息本体 |  |
+
+`data` 对象:
+
+| 字段 | 类型 | 内容 | 备注 |
+| --- | --- | --- | --- |
+| room_id | num | 直播间id |  |
+| card_id | str | 卡片id |  |
+| game_card_click_uv | num | 不重复的点击数? |  |
+
+**示例:**
+
+<details>
+<summary>查看消息示例:</summary>
+
+```json
+{
+	"cmd": "AD_GAME_CARD_REFRESH",
+	"data": {
+		"room_id": "27263119",
+		"card_id": "1873643449509744640",
+		"game_card_click_uv": "2419"
 	}
 }
 ```
